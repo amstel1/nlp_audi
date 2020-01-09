@@ -1,0 +1,82 @@
+from PyEMD import EMD
+
+from scipy.stats import wasserstein_distance
+
+from gensim.models.keyedvectors import KeyedVectors
+
+from gensim.similarities import WmdSimilarity
+#from gensim.models.keyedvectors import load_word2vec_format
+from deeppavlov import build_model, configs
+
+from pymystem3 import Mystem
+from nltk.corpus import stopwords
+
+russian_stopwords = stopwords.words("russian")
+mapping = {
+'A':       'ADJ',                                                                                                                                                                                                                                                                    
+'ADV':     'ADV',                                                                                                                                                                                                                                                                    
+'ADVPRO':  'ADV',                                                                                                                                                                                                                                                                    
+'ANUM':    'ADJ',                                                                                                                                                                                                                                                                    
+'APRO':    'DET',                                                                                                                                                                                                                                                                    
+'COM':     'ADJ',                                                                                                                                                                                                                                                                    
+'CONJ':    'SCONJ',                                                                                                                                                                                                                                                                  
+'INTJ':    'INTJ',                                                                                                                                                                                                                                                                   
+'NONLEX':  'X' ,                                                                                                                                                                                                                                                                     
+'NUM':     'NUM' ,                                                                                                                                                                                                                                                                   
+'PART':    'PART',                                                                                                                                                                                                                                                                   
+'PR':      'ADP' ,                                                                                                                                                                                                                                                                   
+'S':       'NOUN' ,                                                                                                                                                                                                                                                                  
+'SPRO':    'PRON' ,                                                                                                                                                                                                                                                                  
+'UNKN':    'X'   ,                                                                                                                                                                                                                                                                   
+'V':       'VERB'
+}
+
+def tag_mystem(text='Текст нужно передать функции в виде строки!'):  
+    m = Mystem()
+    processed = m.analyze(text)
+    tagged = []
+    for w in processed:
+        
+        try:
+            lemma = w["analysis"][0]["lex"].lower().strip()
+            if lemma not in russian_stopwords:
+                print('Лемма: ' , lemma)
+                pos = w["analysis"][0]["gr"].split(',')[0]
+                pos = pos.split('=')[0].strip()
+                if pos in mapping:
+                    tagged.append(lemma + '_' + mapping[pos]) # здесь мы конвертируем тэги
+                else:
+                    tagged.append(lemma + '_X') # на случай, если попадется тэг, которого нет в маппинге
+        except KeyError:
+            continue # я здесь пропускаю знаки препинания, но вы можете поступить по-другому
+    return tagged
+
+wasserstein_distance()
+
+vec1 = model.tag_mystem(sentence_1)
+
+#https://markroxor.github.io/gensim/static/notebooks/WMD_tutorial.html
+
+#Вариант 1
+
+model  = KeyedVectors.load_word2vec_format('./models/180/model.bin', binary = True)
+model.init_sims(replace=True)  # Normalizes the vectors in the word2vec class.
+sentence_1='в Москве 9 мая метрополитен будет работать круглосуточно'
+sentence_2 = "метро в ночь на 10 мая будет работать круглосуточно"
+#distance = model.similarity(preprocess_text(sentence_1), preprocess_text(sentence_2))  # Compute WMD as normal.
+#distance = model.wmdistance(tag_mystem(sentence_1), tag_mystem(sentence_2))
+
+tag_mystem('в Москве 9 мая метрополитен будет работать круглосуточно')
+
+#from pyemd import emd
+from gensim.similarities import WmdSimilarity
+
+'''
+text = "Красивая мама красиво мыла раму"
+m = Mystem()
+lemmas = m.lemmatize(text)
+print(lemmas)
+'''
+
+processed_mystem = tag_mystem(text=text)
+print(processed_mystem)
